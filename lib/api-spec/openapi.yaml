@@ -1,22 +1,39 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Tutor Marketplace CRM & Lead Management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: dashboard
+    description: Dashboard analytics
+  - name: parents
+    description: Parent management
+  - name: leads
+    description: Lead pipeline management
+  - name: tutors
+    description: Tutor management
+  - name: requirements
+    description: Tuition requirements
+  - name: applications
+    description: Tutor applications
+  - name: demos
+    description: Demo scheduling
+  - name: payments
+    description: Payment tracking
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +41,708 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Staff login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current staff user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffUser"
+
+  # Dashboard
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/lead-sources:
+    get:
+      operationId: getLeadSources
+      tags: [dashboard]
+      summary: Lead source breakdown
+      responses:
+        "200":
+          description: Lead sources report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeadSourceStat"
+
+  /dashboard/revenue:
+    get:
+      operationId: getRevenue
+      tags: [dashboard]
+      summary: Monthly revenue report
+      responses:
+        "200":
+          description: Revenue data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueStat"
+
+  /dashboard/pipeline:
+    get:
+      operationId: getPipelineStats
+      tags: [dashboard]
+      summary: Lead pipeline stage counts
+      responses:
+        "200":
+          description: Pipeline stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PipelineStat"
+
+  # Parents
+  /parents:
+    get:
+      operationId: listParents
+      tags: [parents]
+      summary: List all parents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: source
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of parents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Parent"
+    post:
+      operationId: createParent
+      tags: [parents]
+      summary: Register a parent (lead)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParentInput"
+      responses:
+        "201":
+          description: Parent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Parent"
+
+  /parents/{id}:
+    get:
+      operationId: getParent
+      tags: [parents]
+      summary: Get parent details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Parent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateParent
+      tags: [parents]
+      summary: Update parent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParentUpdate"
+      responses:
+        "200":
+          description: Updated parent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Parent"
+
+  # Leads
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List leads with pipeline info
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: assignedTo
+          in: query
+          schema:
+            type: integer
+        - name: source
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+
+  /leads/{id}/status:
+    patch:
+      operationId: updateLeadStatus
+      tags: [leads]
+      summary: Update lead status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadStatusUpdate"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/{id}/assign:
+    patch:
+      operationId: assignLead
+      tags: [leads]
+      summary: Assign lead to staff
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadAssign"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  # Tutors
+  /tutors:
+    get:
+      operationId: listTutors
+      tags: [tutors]
+      summary: List tutors
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: area
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tutors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tutor"
+    post:
+      operationId: createTutor
+      tags: [tutors]
+      summary: Register a tutor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TutorInput"
+      responses:
+        "201":
+          description: Tutor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tutor"
+
+  /tutors/{id}:
+    get:
+      operationId: getTutor
+      tags: [tutors]
+      summary: Get tutor profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tutor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TutorDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTutor
+      tags: [tutors]
+      summary: Update tutor profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TutorUpdate"
+      responses:
+        "200":
+          description: Updated tutor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tutor"
+
+  # Requirements
+  /requirements:
+    get:
+      operationId: listRequirements
+      tags: [requirements]
+      summary: List tuition requirements (public board)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: area
+          in: query
+          schema:
+            type: string
+        - name: grade
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Requirements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Requirement"
+    post:
+      operationId: createRequirement
+      tags: [requirements]
+      summary: Create a tuition requirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequirementInput"
+      responses:
+        "201":
+          description: Requirement created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requirement"
+
+  /requirements/{id}:
+    get:
+      operationId: getRequirement
+      tags: [requirements]
+      summary: Get requirement details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Requirement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequirementDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateRequirement
+      tags: [requirements]
+      summary: Update requirement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequirementUpdate"
+      responses:
+        "200":
+          description: Updated requirement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requirement"
+
+  # Applications
+  /requirements/{id}/applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: List applications for a requirement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Tutor applies for a requirement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{id}:
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update application status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  # Demos
+  /demos:
+    get:
+      operationId: listDemos
+      tags: [demos]
+      summary: List demos
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: assignedTo
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Demos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Demo"
+    post:
+      operationId: createDemo
+      tags: [demos]
+      summary: Schedule a demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoInput"
+      responses:
+        "201":
+          description: Demo scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Demo"
+
+  /demos/{id}:
+    get:
+      operationId: getDemo
+      tags: [demos]
+      summary: Get demo details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Demo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Demo"
+    patch:
+      operationId: updateDemo
+      tags: [demos]
+      summary: Update demo status/feedback
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoUpdate"
+      responses:
+        "200":
+          description: Updated demo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Demo"
+
+  # Payments
+  /payments:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      summary: List payments
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      operationId: createPayment
+      tags: [payments]
+      summary: Record a payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{id}:
+    patch:
+      operationId: updatePayment
+      tags: [payments]
+      summary: Update payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentUpdate"
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  # Staff
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [auth]
+      summary: List staff users
+      responses:
+        "200":
+          description: Staff users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffUser"
+    post:
+      operationId: createStaff
+      tags: [auth]
+      summary: Create staff user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInput"
+      responses:
+        "201":
+          description: Staff created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffUser"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +750,639 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/StaffUser"
+
+    StaffUser:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, parent_success_executive, tutor_acquisition_executive]
+        createdAt:
+          type: string
+
+    StaffInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, parent_success_executive, tutor_acquisition_executive]
+
+    DashboardStats:
+      type: object
+      required: [totalLeads, totalTutors, activeRequirements, demosScheduled, paidTuitions, totalRevenue, newLeadsThisMonth]
+      properties:
+        totalLeads:
+          type: integer
+        totalTutors:
+          type: integer
+        activeRequirements:
+          type: integer
+        demosScheduled:
+          type: integer
+        paidTuitions:
+          type: integer
+        totalRevenue:
+          type: number
+        newLeadsThisMonth:
+          type: integer
+
+    LeadSourceStat:
+      type: object
+      required: [source, count]
+      properties:
+        source:
+          type: string
+        count:
+          type: integer
+
+    RevenueStat:
+      type: object
+      required: [month, revenue, count]
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        count:
+          type: integer
+
+    PipelineStat:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+
+    Parent:
+      type: object
+      required: [id, name, phone, email, area, leadStatus, leadSource, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        area:
+          type: string
+        city:
+          type: string
+        leadStatus:
+          type: string
+          enum: [new, contacted, qualified, demo_scheduled, demo_done, converted, lost]
+        leadSource:
+          type: string
+          enum: [website, referral, social_media, walk_in, phone, other]
+        assignedTo:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ParentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Parent"
+        - type: object
+          properties:
+            requirements:
+              type: array
+              items:
+                $ref: "#/components/schemas/Requirement"
+            demos:
+              type: array
+              items:
+                $ref: "#/components/schemas/Demo"
+            payments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Payment"
+
+    ParentInput:
+      type: object
+      required: [name, phone, area, leadSource]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        area:
+          type: string
+        city:
+          type: string
+        leadSource:
+          type: string
+          enum: [website, referral, social_media, walk_in, phone, other]
+        notes:
+          type: string
+
+    ParentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        area:
+          type: string
+        city:
+          type: string
+        leadStatus:
+          type: string
+          enum: [new, contacted, qualified, demo_scheduled, demo_done, converted, lost]
+        leadSource:
+          type: string
+          enum: [website, referral, social_media, walk_in, phone, other]
+        notes:
+          type: string
+        assignedTo:
+          type: ["integer", "null"]
+
+    Lead:
+      type: object
+      required: [id, parentId, parentName, parentPhone, area, status, source, createdAt]
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: integer
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        area:
+          type: string
+        status:
+          type: string
+          enum: [new, contacted, qualified, demo_scheduled, demo_done, converted, lost]
+        source:
+          type: string
+        assignedTo:
+          type: ["integer", "null"]
+        assignedName:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    LeadStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [new, contacted, qualified, demo_scheduled, demo_done, converted, lost]
+        notes:
+          type: string
+
+    LeadAssign:
+      type: object
+      required: [staffId]
+      properties:
+        staffId:
+          type: integer
+
+    Tutor:
+      type: object
+      required: [id, name, phone, qualifications, subjects, areas, status, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        qualifications:
+          type: string
+        experience:
+          type: ["integer", "null"]
+        subjects:
+          type: array
+          items:
+            type: string
+        areas:
+          type: array
+          items:
+            type: string
+        grades:
+          type: array
+          items:
+            type: string
+        expectedFee:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [active, inactive, blacklisted]
+        gender:
+          type: ["string", "null"]
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        createdAt:
+          type: string
+
+    TutorDetail:
+      allOf:
+        - $ref: "#/components/schemas/Tutor"
+        - type: object
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: "#/components/schemas/Application"
+            demos:
+              type: array
+              items:
+                $ref: "#/components/schemas/Demo"
+
+    TutorInput:
+      type: object
+      required: [name, phone, qualifications, subjects, areas, teachingMode]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        qualifications:
+          type: string
+        experience:
+          type: integer
+        subjects:
+          type: array
+          items:
+            type: string
+        areas:
+          type: array
+          items:
+            type: string
+        grades:
+          type: array
+          items:
+            type: string
+        expectedFee:
+          type: number
+        gender:
+          type: string
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        bio:
+          type: string
+
+    TutorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        qualifications:
+          type: string
+        experience:
+          type: integer
+        subjects:
+          type: array
+          items:
+            type: string
+        areas:
+          type: array
+          items:
+            type: string
+        grades:
+          type: array
+          items:
+            type: string
+        expectedFee:
+          type: number
+        gender:
+          type: string
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        status:
+          type: string
+          enum: [active, inactive, blacklisted]
+        bio:
+          type: string
+
+    Requirement:
+      type: object
+      required: [id, parentId, subject, grade, area, status, createdAt]
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: integer
+        parentName:
+          type: string
+        subject:
+          type: string
+        grade:
+          type: string
+        area:
+          type: string
+        daysPerWeek:
+          type: ["integer", "null"]
+        duration:
+          type: ["integer", "null"]
+        budget:
+          type: ["number", "null"]
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        gender:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [open, in_progress, fulfilled, closed]
+        slug:
+          type: string
+        createdAt:
+          type: string
+
+    RequirementDetail:
+      allOf:
+        - $ref: "#/components/schemas/Requirement"
+        - type: object
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: "#/components/schemas/Application"
+
+    RequirementInput:
+      type: object
+      required: [parentId, subject, grade, area, teachingMode]
+      properties:
+        parentId:
+          type: integer
+        subject:
+          type: string
+        grade:
+          type: string
+        area:
+          type: string
+        daysPerWeek:
+          type: integer
+        duration:
+          type: integer
+        budget:
+          type: number
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        gender:
+          type: string
+        description:
+          type: string
+
+    RequirementUpdate:
+      type: object
+      properties:
+        subject:
+          type: string
+        grade:
+          type: string
+        area:
+          type: string
+        daysPerWeek:
+          type: integer
+        duration:
+          type: integer
+        budget:
+          type: number
+        teachingMode:
+          type: string
+          enum: [home, online, both]
+        gender:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, fulfilled, closed]
+
+    Application:
+      type: object
+      required: [id, requirementId, tutorId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        requirementId:
+          type: integer
+        tutorId:
+          type: integer
+        tutorName:
+          type: string
+        tutorPhone:
+          type: string
+        status:
+          type: string
+          enum: [pending, shortlisted, rejected, selected]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ApplicationInput:
+      type: object
+      required: [tutorId]
+      properties:
+        tutorId:
+          type: integer
+        notes:
+          type: string
+
+    ApplicationUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, shortlisted, rejected, selected]
+        notes:
+          type: string
+
+    Demo:
+      type: object
+      required: [id, requirementId, tutorId, scheduledAt, status, createdAt]
+      properties:
+        id:
+          type: integer
+        requirementId:
+          type: integer
+        tutorId:
+          type: integer
+        tutorName:
+          type: string
+        parentId:
+          type: integer
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        subject:
+          type: string
+        area:
+          type: string
+        scheduledAt:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, completed, cancelled, rescheduled]
+        feedback:
+          type: ["string", "null"]
+        outcome:
+          type: ["string", "null"]
+        assignedTo:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    DemoInput:
+      type: object
+      required: [requirementId, tutorId, scheduledAt]
+      properties:
+        requirementId:
+          type: integer
+        tutorId:
+          type: integer
+        scheduledAt:
+          type: string
+        assignedTo:
+          type: integer
+        notes:
+          type: string
+
+    DemoUpdate:
+      type: object
+      properties:
+        scheduledAt:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, completed, cancelled, rescheduled]
+        feedback:
+          type: string
+        outcome:
+          type: string
+        assignedTo:
+          type: integer
+
+    Payment:
+      type: object
+      required: [id, requirementId, amount, type, status, createdAt]
+      properties:
+        id:
+          type: integer
+        requirementId:
+          type: integer
+        tutorId:
+          type: ["integer", "null"]
+        parentId:
+          type: integer
+        parentName:
+          type: string
+        tutorName:
+          type: ["string", "null"]
+        subject:
+          type: string
+        amount:
+          type: number
+        type:
+          type: string
+          enum: [registration, monthly, demo_fee, other]
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        paidAt:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PaymentInput:
+      type: object
+      required: [requirementId, parentId, amount, type]
+      properties:
+        requirementId:
+          type: integer
+        parentId:
+          type: integer
+        tutorId:
+          type: integer
+        amount:
+          type: number
+        type:
+          type: string
+          enum: [registration, monthly, demo_fee, other]
+        notes:
+          type: string
+
+    PaymentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        paidAt:
+          type: string
+        amount:
+          type: number
+        notes:
+          type: string
