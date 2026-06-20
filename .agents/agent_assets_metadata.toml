@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "rhiQdYKEDpzKRnUfMUF8k"
+uri = "file://README.md"
+type = "text"
+title = "TutorCRM README"
